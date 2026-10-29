@@ -3,6 +3,7 @@ package com.trianguloy.urlchecker.utilities.wrappers;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.graphics.drawable.Drawable;
@@ -29,7 +30,8 @@ public class IntentApp {
         // get all packages
         var resolveInfos = cntx.getPackageManager().queryIntentActivities(
                 baseIntent,
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PackageManager.MATCH_ALL : 0);
+                PackageManager.GET_RESOLVED_FILTER |
+                        (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PackageManager.MATCH_ALL : 0));
 
         var intentApps = new ArrayList<IntentApp>();
         for (var resolveInfo : resolveInfos) {
@@ -45,10 +47,25 @@ public class IntentApp {
 
     private final ResolveInfo resolveInfo;
     private static final Map<ComponentName, CharSequence> labelsCache = new HashMap<>();
-    private static final Map<ComponentName, Drawable> iconsCache = new HashMap<>();
+    private static final android.util.LruCache<ComponentName, Drawable.ConstantState> iconsCache = new android.util.LruCache<>(32);
 
-    private IntentApp(ResolveInfo resolveInfo) {
+    IntentApp(ResolveInfo resolveInfo) {
         this.resolveInfo = resolveInfo;
+    }
+
+    /** A host/path/MIME-specific match, rather than an arbitrary web URL handler. */
+    public boolean isUrlSpecificHandler() {
+        int category = resolveInfo.match & IntentFilter.MATCH_CATEGORY_MASK;
+        return category >= IntentFilter.MATCH_CATEGORY_HOST
+                && category <= IntentFilter.MATCH_CATEGORY_TYPE;
+    }
+
+    /** Used only for a query for an arbitrary http(s) URL. */
+    public boolean isGenericWebHandler() {
+        var filter = resolveInfo.filter;
+        return !isUrlSpecificHandler() && (filter == null ||
+                (filter.countDataAuthorities() == 0 && filter.countDataPaths() == 0
+                        && filter.countDataTypes() == 0));
     }
 
     /** Returns the package only */
@@ -79,12 +96,18 @@ public class IntentApp {
         if (dim == 0) return null;
 
         var component = getComponent();
-        if (!iconsCache.containsKey(component)) {
-            var icon = resolveInfo.loadIcon(activity.getPackageManager());
-            icon.setBounds(0, 0, dim, dim);
-            iconsCache.put(component, icon);
+        var state = iconsCache.get(component);
+        Drawable icon;
+        if (state == null) {
+            icon = resolveInfo.loadIcon(activity.getPackageManager());
+            state = icon.getConstantState();
+            if (state != null) iconsCache.put(component, state);
+        } else {
+            icon = state.newDrawable(activity.getResources());
         }
-        return iconsCache.get(component);
+        icon = icon.mutate();
+        icon.setBounds(0, 0, dim, dim);
+        return icon;
     }
 
     @Override

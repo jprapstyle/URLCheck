@@ -95,11 +95,17 @@ public class ClearUrlCatalog implements JsonEditorInterface {
      * Parses and returns the providers from the catalog
      * Returns a list of pairs: [(rule,data),...]
      */
-    public static List<Pair<String, JSONObject>> getRules(Activity cntx) {
+    private static List<Pair<String, JSONObject>> cachedRules;
+    private static String cachedStamp;
+
+    public static synchronized List<Pair<String, JSONObject>> getRules(Activity cntx) {
         try {
             // prepare
             List<Pair<String, JSONObject>> rules = new ArrayList<>();
             ClearUrlCatalog clearUrlCatalog = new ClearUrlCatalog(cntx);
+            var file = cntx.getFileStreamPath("clearUrlCatalog");
+            String stamp = file.getAbsolutePath() + ":" + file.lastModified() + ":" + file.length();
+            if (cachedRules != null && stamp.equals(cachedStamp)) return cachedRules;
             JSONObject json = clearUrlCatalog.getCatalog();
 
             // extract and merge each provider
@@ -109,7 +115,9 @@ public class ClearUrlCatalog implements JsonEditorInterface {
                     rules.add(Pair.create(rule, providerData.getJSONObject(rule)));
                 }
             }
-            return rules;
+            cachedRules = Collections.unmodifiableList(rules);
+            cachedStamp = stamp;
+            return cachedRules;
         } catch (JSONException e) {
             // invalid catalog, return empty
             AndroidUtils.assertError(e.getMessage(), e);
@@ -159,12 +167,19 @@ public class ClearUrlCatalog implements JsonEditorInterface {
         }
 
         // something new, save
-        return custom.set(content) ? Result.UPDATED : Result.ERROR;
+        synchronized (ClearUrlCatalog.class) {
+            if (!custom.set(content)) return Result.ERROR;
+            cachedRules = null;
+            return Result.UPDATED;
+        }
     }
 
     /** Deletes the custom catalog, built-in one will be returned afterwards */
     public void clear() {
-        custom.delete();
+        synchronized (ClearUrlCatalog.class) {
+            custom.delete();
+            cachedRules = null;
+        }
         lastUpdate.clear();
         lastCheck.clear();
         lastAuto.clear();

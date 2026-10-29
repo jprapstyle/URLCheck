@@ -31,6 +31,7 @@ public class Hosts {
 
     // A custom mapping from a given hash with queryable buckets
     private final HashMap<Integer, HashMap<String, Pair<String, String>>> buckets = new HashMap<>();
+    private static final android.util.LruCache<String, HashMap<String, Pair<String, String>>> LOOKUPS = new android.util.LruCache<>(16);
     private final Activity cntx;
 
     public Hosts(Activity cntx) {
@@ -65,6 +66,9 @@ public class Hosts {
     /** Background thread that builds the database (and notifies progress) */
     private void _build(ProgressDialog progress, Runnable onFinished) {
         var catalog = data.getCatalog();
+
+        LOOKUPS.evictAll();
+        buckets.clear();
 
         // delete previous first
         var fileNames = getFileNames();
@@ -137,6 +141,8 @@ public class Hosts {
                     .set(builder.toString());
         }
 
+        LOOKUPS.evictAll();
+
         // notify finish
         Log.d("HOSTS", "Built: " + size() + " entries");
         progress.dismiss();
@@ -160,15 +166,20 @@ public class Hosts {
 
     /** Returns the label and color for the exact host, null if not in the database */
     public Pair<String, String> containsExact(String host) {
-        return getBucket(host, key -> {
-            var values = new HashMap<String, Pair<String, String>>();
+        int key = Math.floorMod(host.hashCode(), FILES);
+        var file = cntx.getFileStreamPath(PREFIX + key);
+        String stamp = file.getAbsolutePath() + ":" + file.lastModified() + ":" + file.length();
+        var values = LOOKUPS.get(stamp);
+        if (values == null) {
+            var loaded = new HashMap<String, Pair<String, String>>();
             new InternalFile(PREFIX + key, cntx).stream(line -> {
-                // each line has <domain,label,color>
                 var elements = line.split(String.valueOf(SEPARATOR), 3);
-                if (elements.length == 3) values.put(elements[0], Pair.create(elements[1], elements[2]));
+                if (elements.length == 3) loaded.put(elements[0], Pair.create(elements[1], elements[2]));
             });
-            return values;
-        }).get(host);
+            values = loaded;
+            LOOKUPS.put(stamp, values);
+        }
+        return values.get(host);
     }
 
     /* ------------------- internal ------------------- */

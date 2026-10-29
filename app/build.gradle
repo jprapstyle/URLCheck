@@ -11,9 +11,12 @@ android {
         compileSdkVersion 36
         minSdkVersion 19
         targetSdkVersion 36
-        versionCode 47
-        versionName "3.5"
+        testInstrumentationRunner (project.findProperty("checkRunner") ?: "com.trianguloy.urlchecker.PerformanceChecks")
+        versionCode 48
+        versionName "3.5-enlion.1"
     }
+
+    testBuildType (project.findProperty("checkVariant") ?: "alpha")
 
     buildTypes {
         release {
@@ -24,12 +27,12 @@ android {
         alpha {
             initWith(buildTypes.debug)
             applicationIdSuffix '.alpha'
-            versionNameSuffix '-ALPHA'
+            versionNameSuffix '-alpha.1'
         }
         evaluation {
             initWith(buildTypes.debug)
             applicationIdSuffix '.test'
-            versionNameSuffix '-TEST'
+            versionNameSuffix '-test.1'
         }
     }
 

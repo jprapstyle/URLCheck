@@ -25,6 +25,7 @@ import com.trianguloy.urlchecker.fragments.ResultCodeInjector;
 import com.trianguloy.urlchecker.modules.companions.Hosts;
 import com.trianguloy.urlchecker.modules.companions.VersionManager;
 import com.trianguloy.urlchecker.modules.list.LogModule;
+import com.trianguloy.urlchecker.modules.companions.LogStore;
 import com.trianguloy.urlchecker.modules.list.UnshortenModule;
 import com.trianguloy.urlchecker.modules.list.VirusTotalModule;
 import com.trianguloy.urlchecker.modules.list.WebhookModule;
@@ -171,6 +172,7 @@ public class BackupActivity extends Activity {
     /** Creates a backup and saves it to [uri] */
     private void backup(Uri uri) {
         ProgressDialog.run(this, R.string.bck_backup, progress -> {
+            synchronized (LogStore.LOCK) {
 
             progress.setMax(7);
             progress.setMessage("Initializing backup");
@@ -197,12 +199,15 @@ public class BackupActivity extends Activity {
                 // secret preferences
                 progress.setMessage("Adding secrets");
                 progress.increaseProgress();
-                if (chk_secrets.isChecked()) backupPreferencesMatching(FILE_SECRETS, IS_PREF_SECRET, zip);
+                if (chk_secrets.isChecked()) {
+                    backupPreferencesMatching(FILE_SECRETS, IS_PREF_SECRET, zip);
+                    backupFilesMatching(SECRET_FILES_FOLDER, IS_FILE_SECRET, zip);
+                }
 
                 // rest of files
                 progress.setMessage("Adding files");
                 progress.increaseProgress();
-                if (chk_data_files.isChecked()) backupFilesMatching(FILES_FOLDER, negate(IS_FILE_CACHE), zip);
+                if (chk_data_files.isChecked()) backupFilesMatching(FILES_FOLDER, s -> !IS_FILE_CACHE.apply(s) && !IS_FILE_SECRET.apply(s), zip);
 
                 // cache files
                 progress.setMessage("Adding cache");
@@ -214,6 +219,7 @@ public class BackupActivity extends Activity {
             } catch (Exception e) {
                 AndroidUtils.assertError("Unable to backup", e);
                 runOnUiThread(() -> Toast.makeText(this, R.string.bck_backupError, Toast.LENGTH_LONG).show());
+            }
             }
         });
     }
@@ -260,6 +266,7 @@ public class BackupActivity extends Activity {
     /** Restores a backup from [uri] */
     private void restore(Uri uri) {
         ProgressDialog.run(this, R.string.bck_restore, progress -> {
+            synchronized (LogStore.LOCK) {
             progress.setMax(5);
             progress.setMessage("Loading backup");
             try (var zip = new ZipReader(uri, this)) {
@@ -278,12 +285,15 @@ public class BackupActivity extends Activity {
                 // secret preferences
                 progress.setMessage("Restoring secrets");
                 progress.increaseProgress();
-                if (chk_secrets.isChecked()) restorePreferencesMatching(FILE_SECRETS, IS_PREF_SECRET, zip);
+                if (chk_secrets.isChecked()) {
+                    restorePreferencesMatching(FILE_SECRETS, IS_PREF_SECRET, zip);
+                    restoreFilesMatching(SECRET_FILES_FOLDER, IS_FILE_SECRET, zip);
+                }
 
                 // rest of files
                 progress.setMessage("Restoring files");
                 progress.increaseProgress();
-                if (chk_data_files.isChecked()) restoreFilesMatching(FILES_FOLDER, negate(IS_FILE_CACHE), zip);
+                if (chk_data_files.isChecked()) restoreFilesMatching(FILES_FOLDER, s -> !IS_FILE_CACHE.apply(s) && !IS_FILE_SECRET.apply(s), zip);
 
                 // cache files
                 progress.setMessage("Restoring cache");
@@ -298,6 +308,7 @@ public class BackupActivity extends Activity {
             }
 
             runOnUiThread(() -> AndroidSettings.reload(this));
+            }
         });
     }
 
@@ -350,7 +361,9 @@ public class BackupActivity extends Activity {
         // create
         for (var fileName : fileNames) {
             if ((folder + EMPTY).equals(fileName)) continue; // ignore marker
-            try (var out = openFileOutput(fileName.substring(folder.length()), MODE_PRIVATE)) {
+            String name = fileName.substring(folder.length());
+            if (!predicate.apply(name) || name.contains("/") || name.contains("\\") || name.equals("..")) continue;
+            try (var out = openFileOutput(name, MODE_PRIVATE)) {
                 zip.getFileStream(fileName, out);
             }
         }
@@ -369,6 +382,7 @@ public class BackupActivity extends Activity {
 
     private void delete() {
         ProgressDialog.run(this, R.string.bck_delete, progress -> {
+            synchronized (LogStore.LOCK) {
             progress.setMax(4);
             try {
 
@@ -379,12 +393,15 @@ public class BackupActivity extends Activity {
                 // secret preferences
                 progress.setMessage("Deleting secrets");
                 progress.increaseProgress();
-                if (chk_secrets.isChecked()) deletePreferencesMatching(IS_PREF_SECRET);
+                if (chk_secrets.isChecked()) {
+                    deletePreferencesMatching(IS_PREF_SECRET);
+                    deleteFilesMatching(IS_FILE_SECRET);
+                }
 
                 // rest of files
                 progress.setMessage("Deleting files");
                 progress.increaseProgress();
-                if (chk_data_files.isChecked()) deleteFilesMatching(negate(IS_FILE_CACHE));
+                if (chk_data_files.isChecked()) deleteFilesMatching(s -> !IS_FILE_CACHE.apply(s) && !IS_FILE_SECRET.apply(s));
 
                 // cache files
                 progress.setMessage("Deleting cache");
@@ -399,6 +416,7 @@ public class BackupActivity extends Activity {
             }
 
             runOnUiThread(() -> AndroidSettings.reload(this));
+            }
         });
     }
 
@@ -422,6 +440,8 @@ public class BackupActivity extends Activity {
     private static final String FILE_PREFERENCES = "preferences";
     private static final String FILE_SECRETS = "secrets";
     private static final String FILES_FOLDER = "files/";
+    private static final String SECRET_FILES_FOLDER = "secret-files/";
+    private static final Function<String, Boolean> IS_FILE_SECRET = s -> s.startsWith(LogStore.FILE);
     private static final String CACHE_FOLDER = "cache/";
     private static final String PREF_VALUE = "value";
     private static final String PREF_TYPE = "type";

@@ -41,8 +41,24 @@ public class LastOpened {
 
     /** Sorts an existing list of [intentApps] with the preferred order */
     public void sort(List<IntentApp> intentApps, String url) {
-        Collections.sort(intentApps, (from, another) ->
-                comparePrefer(from.getComponent(), another.getComponent(), url));
+        // Keep the same stable pairwise ordering and preference keys. Parse the
+        // domain and obtain SharedPreferences once, rather than per comparison.
+        final String prefix = perDomainPref.get() ? getDomain(url) + " " : "";
+        final var prefs = com.trianguloy.urlchecker.utilities.generics.GenericPref.getPrefs(cntx);
+        final var names = new java.util.HashMap<ComponentName, String>();
+        for (var app : intentApps) {
+            var component = app.getComponent();
+            names.put(component, component.flattenToShortString());
+        }
+        Collections.sort(intentApps, (fromApp, otherApp) -> {
+            var from = fromApp.getComponent();
+            var other = otherApp.getComponent();
+            boolean reverse = from.compareTo(other) > 0;
+            String left = names.get(reverse ? other : from);
+            String right = names.get(reverse ? from : other);
+            int score = prefs.getInt(prefix + "opened " + left + " " + right, 0);
+            return reverse ? -score : score;
+        });
     }
 
     /** Marks the [prefer] component as preferred over [others]. */

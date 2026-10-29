@@ -383,8 +383,15 @@ class ClearUrlDialog extends AModuleDialog {
      * @param input input to use
      * @return the matcher object
      */
+    private static final android.util.LruCache<String, Pattern> PATTERNS = new android.util.LruCache<>(512);
+
     private static Matcher matcher(String regex, String input) {
-        return Pattern.compile(regex, Pattern.CASE_INSENSITIVE).matcher(input);
+        Pattern pattern = PATTERNS.get(regex);
+        if (pattern == null) {
+            pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+            PATTERNS.put(regex, pattern);
+        }
+        return pattern.matcher(input);
     }
 
 }

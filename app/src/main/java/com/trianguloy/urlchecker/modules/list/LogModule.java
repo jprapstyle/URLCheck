@@ -8,6 +8,8 @@ import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
+import com.trianguloy.urlchecker.modules.companions.LogStore;
 
 import com.trianguloy.urlchecker.R;
 import com.trianguloy.urlchecker.activities.ModulesActivity;
@@ -59,13 +61,9 @@ public class LogModule extends AModuleData {
 
 class LogDialog extends AModuleDialog {
 
-    private final StringPref log;
-    private final IntPref limit;
 
     public LogDialog(MainDialog dialog) {
         super(dialog);
-        log = LogModule.LOG_DATA(dialog);
-        limit = LogModule.LOG_LIMIT(dialog);
     }
 
     @Override
@@ -86,21 +84,16 @@ class LogDialog extends AModuleDialog {
     }
 
     private void addLine(String line) {
-        var text = log.get();
-        if (limit.get() > 0) text = JavaUtils.limitLines(text, '\n', limit.get() - 1);
-        if (!text.isEmpty()) text += "\n";
-        text += line.replace("\n", "%0A");
-        log.set(text);
+        LogStore.append(getActivity(), line);
     }
+
 }
 
 class LogConfig extends AModuleConfig {
 
-    private final StringPref log;
 
     public LogConfig(ModulesActivity activity) {
         super(activity);
-        log = LogModule.LOG_DATA(activity);
     }
 
     @Override
@@ -118,15 +111,23 @@ class LogConfig extends AModuleConfig {
 
     /** Display the log, editable or clickable */
     public void showLog(boolean editable) {
+        LogStore.preview(getActivity(), (preview, error) -> getActivity().runOnUiThread(() -> {
+            if (getActivity().isFinishing() || getActivity().isDestroyed()) return;
+            if (error != null) {
+                Toast.makeText(getActivity(), R.string.mLog_ioError, Toast.LENGTH_LONG).show();
+                return;
+            }
+            showPreview(editable && !preview.truncated, preview);
+        }));
+    }
+
+    private void showPreview(boolean editable, LogStore.Preview preview) {
         // init textview with content
         // on editable: an editText
         // on non-editable: a textview with links
         TextView textView = editable ? new EditText(getActivity()) : new TextView(getActivity());
-        textView.setText(
-                !log.get().isEmpty() ? log.get()
-                        : editable ? ""
-                        : getActivity().getString(R.string.mLog_empty)
-        );
+        textView.setText(!preview.text.isEmpty() ? preview.text
+                : editable ? "" : getActivity().getString(R.string.mLog_empty));
         if (!editable) Linkify.addLinks(textView, Linkify.WEB_URLS);
 
         // wrap into a padded scrollview for nice scrolling
@@ -141,16 +142,24 @@ class LogConfig extends AModuleConfig {
                 .setTitle(R.string.mLog_name)
                 .setView(scrollView)
                 .setNegativeButton(R.string.close, null);
+        if (preview.truncated) builder.setMessage(R.string.mLog_recentOnly);
 
         if (editable) {
             // editable: add save and clear buttons
             builder = builder
                     .setPositiveButton(R.string.save, (dialog, which) ->
-                            log.set(textView.getText().toString())
+                            LogStore.replace(getActivity(), preview, textView.getText().toString(), (value, error) -> showWriteError(error))
                     )
                     .setNeutralButton(R.string.clear, null); // set below
         }
 
+        if (!editable) builder.setNeutralButton(R.string.clear, (d, w) ->
+                new AlertDialog.Builder(getActivity())
+                        .setMessage(R.string.mLog_clearConfirm)
+                        .setNegativeButton(android.R.string.cancel, null)
+                        .setPositiveButton(R.string.clear, (confirm, which) ->
+                                LogStore.clear(getActivity(), (value, error) -> showWriteError(error)))
+                        .show());
         // show
         AlertDialog dialog = builder.show();
 
@@ -167,4 +176,11 @@ class LogConfig extends AModuleConfig {
         }
 
     }
+    private void showWriteError(Exception error) {
+        if (error != null) getActivity().runOnUiThread(() -> {
+            if (!getActivity().isFinishing())
+                Toast.makeText(getActivity(), R.string.mLog_ioError, Toast.LENGTH_LONG).show();
+        });
+    }
+
 }

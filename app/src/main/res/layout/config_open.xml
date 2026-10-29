@@ -79,6 +79,25 @@
         android:text="@string/mOpen_mergeCopy" />
 
     <Switch
+        android:id="@+id/fixed_browser_enabled"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/smallPadding"
+        android:text="@string/mOpen_fixedBrowserEnabled" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/mOpen_fixedBrowserDesc" />
+
+    <Button
+        android:id="@+id/fixed_browser_choose"
+        style="?android:attr/buttonBarButtonStyle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/mOpen_fixedBrowserTitle" />
+
+    <Switch
         android:id="@+id/perDomain"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -98,6 +117,20 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/smallPadding"
         android:text="@string/mOpen_rejected" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/smallPadding"
+        android:text="@string/mOpen_hiddenDesc" />
+
+    <Button
+        android:id="@+id/hidden_apps"
+        style="?android:attr/buttonBarButtonStyle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/smallPadding"
+        android:text="@string/mOpen_hidden" />
 
     <LinearLayout
         android:layout_width="match_parent"

@@ -123,6 +123,10 @@ public class SettingsActivity extends Activity {
                                 : seekBarValue
         );
 
+        com.trianguloy.urlchecker.utilities.OrientationSettings.preference(this).attachToSpinner(
+                findViewById(R.id.screenOrientation),
+                mode -> com.trianguloy.urlchecker.utilities.OrientationSettings.apply(this));
+
         // vertical and horizontal placements
         GravityPref.VERTICAL_PREF(this).attachToSpinner(findViewById(R.id.verticalPos),null);
         GravityPref.HORIZONTAL_PREF(this).attachToSpinner(findViewById(R.id.horizontalPos),null);

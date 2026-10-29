@@ -246,7 +246,7 @@ Note: if you edit the patterns, new built-in patterns from app updates will not 
     <string name="mOpen_desc">"Contains the following buttons (left to right):
 - Custom Tabs button: toggle to enable/disable the custom tab feature. When enabled, the browser should be opened in a 'lite' mode.
 - Incognito button: For Firefox only. Toggle to enable/disable the incognito mode. When enabled, the browser should be opened in incognito.
-- Open button: Press the app name to open the link on that app. If a link can be opened with multiple apps, an arrow will be shown to let you choose.
+- Open button: Press the app name to open the link on that app. If a link can be opened with multiple apps, an arrow will be shown to let you choose. Long press the app name or the arrow to choose which apps to hide.
 - Copy button: Press the button to copy the link into the clipboard.
 - Share button: Press the button to share the link."</string>
     <string name="mOpen_ctabs">Custom tabs:</string>
@@ -485,4 +485,24 @@ This is an advanced version of the 'Queries Remover' module."</string>
     <string name="mChg_current">Current version: %s</string>
     <string name="mChg_view">View changes</string>
 
+    <string name="mOpen_hidden">Hidden apps</string>
+    <string name="mOpen_hiddenDesc">Checked apps will not be shown in the list of apps to open with. You can also long press the open button to choose from the apps that can open the current link.</string>
+    <string name="mLog_recentOnly">Showing the latest 64 KB. Full history is preserved and included when backing up secrets. Large logs cannot be edited here.</string>
+    <string name="mLog_ioError">Unable to read or save the log. If it changed, reopen it and try again.</string>
+    <string name="mLog_clearConfirm">Delete the entire URL log?</string>
+    <string name="mOpen_fixedBrowserTitle">Fixed browser</string>
+    <string name="mOpen_fixedBrowserEnabled">Use a fixed browser</string>
+    <string name="mOpen_fixedBrowserDesc">Use the chosen browser when there is no learned preference. Apps that specifically handle the current web link take priority by default. Choosing another app updates the existing preference history, which takes precedence even while the fixed browser is enabled. The domain sorting setting also applies. Hidden, source, or rejected apps remain excluded by their settings. Long press the Open button to pin the current browser or change this preference.</string>
+    <string name="mOpen_fixedBrowserSelected">Browser: %1$s</string>
+    <string name="mOpen_fixedBrowserNone">Not selected</string>
+    <string name="mOpen_fixedBrowserUnavailable">Unavailable (%1$s)</string>
+    <string name="mOpen_fixedBrowserNoApps">No visible browsers found. Check Hidden apps or install a browser.</string>
+    <string name="mOpen_fixedBrowserClear">Clear fixed browser</string>
+    <string name="mOpen_fixedBrowserPinCurrent">Pin this browser: %1$s</string>
+    <string name="orientation_title">Screen orientation</string>
+    <string name="orientation_system">Follow system settings</string>
+    <string name="orientation_portrait">Portrait only</string>
+    <string name="orientation_landscape">Landscape only</string>
+    <string name="orientation_automatic">Always auto-rotate</string>
+    <string name="orientation_description">Applies to the URL popup and app screens. Always auto-rotate uses the sensor even when system rotation is locked. Large-screen devices may override fixed orientations.</string>
 </resources>
