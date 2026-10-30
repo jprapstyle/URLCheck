@@ -173,14 +173,6 @@ $env:JAVA_HOME = 'C:\Program Files\Android\Android Studio\jbr'
 
 최적화 후 평균은 이전 반복 실행 평균 124~138ms와 비슷하거나 소폭 빠른 수준이다. 표본 수와 실행 조건 변동을 고려하면 뚜렷한 성능 향상을 입증한 결과로 보기는 어렵다. 각 측정 구간에서 크래시·ANR·OutOfMemoryError 로그는 발견되지 않았고, 최적화 후 구간에는 프로세스 재시작도 없었다.
 
-원본 로그와 집계 파일은 저장소 외부의 다음 경로에 보관했다.
-
-`C:/Users/enLioN/Documents/ChatGPT/EnLioN/urlcheck-popup-test-20261029`
-
-- `logcat.txt`, `result.txt`: 첫 측정
-- `cold-logcat.txt`, `cold-result.txt`: 강제 종료 후 측정
-- `warm-optimized-logcat.txt`, `warm-optimized-result.txt`: 반복 실행 최적화 후 측정
-
 ## 재측정 방법
 
 1. 같은 버전을 설치하고 애니메이션, 화면 방향, 모듈 설정, 접힘 상태를 동일하게 유지한다.
