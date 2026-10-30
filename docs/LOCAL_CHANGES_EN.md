@@ -157,13 +157,6 @@ A new process was confirmed for the first link after force-stop. Cold-start 731m
 
 The optimized mean is similar to or slightly faster than earlier warm means. Sample sizes and variation do not establish a clear gain. No crash, ANR, or OutOfMemoryError logs appeared in these windows; the optimized window had no process restart.
 
-Raw logs and summaries are outside the repository:
-
-`C:/Users/enLioN/Documents/ChatGPT/EnLioN/urlcheck-popup-test-20261029`
-
-- `logcat.txt`, `result.txt`: initial session
-- `cold-logcat.txt`, `cold-result.txt`: force-stop session
-- `warm-optimized-logcat.txt`, `warm-optimized-result.txt`: optimized warm session
 
 ## Retesting procedure
 
